@@ -1,3 +1,5 @@
+%The similarity construction algorithm proposed in this paper%
+%For multi lable dataset%
 S = zeros(20015,20015);
 load('..\data\MIRFLICKR.mat','LAll');
 for i = 1 : 20015
