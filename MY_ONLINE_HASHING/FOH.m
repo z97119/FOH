@@ -2,7 +2,7 @@
 clear;
 opts.dirs.data = '../data';
 opts.unsupervised = 0;
-opts.nbits = 32;
+opts.nbits = 16;
 normalizeX = 1;
 K = 500;
 numq = 500;
@@ -42,15 +42,14 @@ W_t = W_t ./ repmat(diag(sqrt(W_t' * W_t))', Dtest, 1);
 P_t = randn(opts.nbits, Nvtrain);   %k x c
 P_t = P_t ./ repmat(diag(sqrt(P_t' * P_t))', opts.nbits, 1);
 
-%%%%%%%%%%%%  parameters depicted in the paper %%%%%%%%%%%%%%%%
+%%%%%%%%%%%% seven parameters depicted in the paper %%%%%%%%%%%%%%%%
 lambda = 0.6;   
 sigma = 0.8;    
 etad = 0.2;    
 etas = 1.6;     
-eta = 0.1;
 theta = 1.2;
 mu = 0.5;
-alpha = 0.6;
+tau = 0.6;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 n_t = 2000;     % training size at each stage       % 2K for CIFAR-10 
 training_size = 20000;   % total training instances % 20K for CIFAR-10 
@@ -68,10 +67,7 @@ ve_t = [];
 
 S_t = [];
 
-% now_X = train;
-% now_B = single(W_t' * now_X >= 0);
 now_L = [];
-Xk = train(:, 1 : training_size);
 
 tic
 for t = n_t:n_t:training_size
@@ -93,7 +89,7 @@ for t = n_t:n_t:training_size
         now_X = Xe_t;
         now_B = single(W_t' * Xe_t >=0);
         dex = single(knnsearch(now_B',Hq','K',K,'Distance','hamming'));
-        ud = unique(dex(:));   %k近邻索引  去重复
+        ud = unique(dex(:));   
         seq = (1:size(now_B,2));
         now_B(:,setdiff(seq,ud)) = nan;
         now_X(:,setdiff(seq,ud)) = nan;
@@ -123,7 +119,7 @@ for t = n_t:n_t:training_size
     now_L = [now_L; ls_t];
     
     
-    S_t = single(ls_t == le_t');    % it can be easily extended to the multi-label case
+    S_t = single(ls_t == le_t');    % single lable case
     for i = 1:n_t
         if sum(S_t(i,:)) ~= 0
             ind = find(S_t(i,:) ~=0);
@@ -168,7 +164,7 @@ for t = n_t:n_t:training_size
     
     %update P_t
     I_c = eye(Nvtrain);
-    P_t = (mu * Be_t * ve_t' + theta * Bs_t * vs_t')/(theta * (vs_t * vs_t')+ mu * (ve_t * ve_t') + alpha * I_c);
+    P_t = (mu * Be_t * ve_t' + theta * Bs_t * vs_t')/(theta * (vs_t * vs_t')+ mu * (ve_t * ve_t') + tau * I_c);
     
     % update W
     I = eye(Dtrain);
@@ -183,20 +179,12 @@ for t = n_t:n_t:training_size
     now_B(:,setdiff(seq,ud)) = nan;
     now_X(:,setdiff(seq,ud)) = nan;
     now_L(setdiff(seq,ud)) = nan;
-%     now_B = now_B(:,ud);
-%     now_X = now_X(:,ud);
-%     now_L = now_L(ud);
+    
     tmp_W = tmp_W + W_t;
-    
-    
-%     now_B(:,ud) = single(W_t' * now_X(:,ud) >= 0);
-%     now_B(:, t - n_t + 1 : t) = single(W_t' * Xs_t >= 0);
-    %now_B = single(W_t' * train >=0);
 end
 toc
 W_t = tmp_W ./ 10;
 tic
-%Htrain = single(W_t' * train >= 0);
 Htest = single(W_t' * test >= 0);
 Hq = single(W_t' * q >= 0);
 tic
@@ -208,11 +196,10 @@ now_B = now_B(:,up);
 now_L = now_L(up);
 toc
 Aff = affinity([], [], now_L, testLabel, opts);
-%Aff = affinity([], [], trainLabel, testLabel, opts);
+
 opts.metric = 'mAP';
 res = evaluate(now_B', Htest', opts, Aff);
-%res = evaluate(Htrain', Htest', opts, Aff);
+
 toc
-%save('FOH128.mat','Htrain','Htest','Aff','trainLabel','testLabel');
 
 %clear;

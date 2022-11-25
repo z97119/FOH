@@ -1,14 +1,14 @@
 S = zeros(20015,20015);
-load('E:\matlab111\bin\label24.mat','In');
+load('..\data\MIRFLICKR.mat','LAll');
 for i = 1 : 20015
-    c =  In(i,:);
+    c =  LAll(i,:);
     for j = 1 : 20015
-        d =  In(j,:);
+        d =  LAll(j,:);
         e = length(find(intersect(c,d)));
         m = length(find(d));
         n = length(find(c));
         S(i,j) = (e/m + e/n)/2;
     end
 end
-save('E:\matlab111\bin\S.mat','S');
+save('S20015.mat','S');
     
